@@ -5,7 +5,7 @@
 namespace Orion {
 
 TEST(VersionTest, Basic) {
-  Version v{1, 0};
+  Version v{1, 0, 0};
   EXPECT_EQ(1, v.Major());
   EXPECT_EQ(0, v.Minor());
   EXPECT_EQ(0, v.Patch());
@@ -39,7 +39,7 @@ TEST(VersionTest, ToString) {
   std::stringstream ss;
   ss << v;
 
-  EXPECT_EQ("1.0-rc.2+12345", ss.str());
+  EXPECT_EQ("1.0.0-rc.2+12345", ss.str());
 }
 
 } // namespace Orion

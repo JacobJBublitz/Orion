@@ -16,6 +16,25 @@ public:
   constexpr Spliterator(StringType str, StringType separator) noexcept
       : str_(str), separator_string_(separator), separator_char_('\0') {}
 
+  [[nodiscard]] constexpr bool HasNext() const noexcept {
+    return !str_.empty();
+  }
+
+  StringType Next() noexcept {
+    auto str = **this;
+    ++(*this);
+    return str;
+  }
+
+  bool Skip(std::size_t count) noexcept {
+    for (std::size_t i = 0; i < count; ++i)
+      if (!HasNext())
+        return false;
+      else
+        Next();
+    return true;
+  }
+
   constexpr operator bool() const noexcept { return !str_.empty(); }
 
   StringType operator*() const noexcept {

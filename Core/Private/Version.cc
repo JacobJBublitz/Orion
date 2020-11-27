@@ -4,42 +4,38 @@
 
 namespace Orion {
 
+namespace {
+
+constexpr char kSeparatorChar = '.';
+constexpr char kPrereleaseSeparatorChar = '-';
+constexpr char kBuildMetadataSeparatorChar = '+';
+
+} // namespace
+
 std::string_view Version::Prerelease(std::size_t idx) const noexcept {
-  auto iter = Stl::Spliterator(prerelease_, '.');
+  auto iter = Stl::Spliterator(prerelease_, kSeparatorChar);
 
-  std::size_t i = 0;
-  while (iter) {
-    if (i == idx)
-      return *iter;
-    ++iter;
-    ++i;
-  }
-
-  return {};
+  iter.Skip(idx);
+  return iter.Next();
 }
 
 std::string_view Version::BuildMetadata(std::size_t idx) const noexcept {
-  auto iter = Stl::Spliterator(build_metadata_, '.');
+  auto iter = Stl::Spliterator(build_metadata_, kSeparatorChar);
 
-  std::size_t i = 0;
-  while (iter) {
-    if (i == idx)
-      return *iter;
-    ++iter;
-    ++i;
-  }
-
-  return {};
+  iter.Skip(idx);
+  return iter.Next();
+}
+void Version::WriteToStream(std::ostream &stream,
+                            bool include_build_metadata) const {
+  stream << major_ << kSeparatorChar << minor_ << kSeparatorChar << patch_;
+  if (!prerelease_.empty())
+    stream << kPrereleaseSeparatorChar << prerelease_;
+  if (!build_metadata_.empty() && include_build_metadata)
+    stream << kBuildMetadataSeparatorChar << build_metadata_;
 }
 
 std::ostream &operator<<(std::ostream &stream, const Version &value) {
-  stream << value.Major() << '.' << value.Minor();
-  if (value.Patch() != 0)
-    stream << '.' << value.Patch();
-  if (!value.Prerelease().empty())
-    stream << '-' << value.Prerelease();
-  if (!value.BuildMetadata().empty())
-    stream << '+' << value.BuildMetadata();
+  value.WriteToStream(stream, true);
 
   return stream;
 }
