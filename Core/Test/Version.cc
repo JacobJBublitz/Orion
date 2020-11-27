@@ -34,6 +34,35 @@ TEST(VersionTest, BuildMetadata) {
     EXPECT_EQ("", v.BuildMetadata(i));
 }
 
+TEST(VersionTest, Parse) {
+  auto v = Version::Parse("1.0.0");
+  EXPECT_TRUE(v.has_value());
+  EXPECT_EQ(1, v->Major());
+  EXPECT_EQ(0, v->Minor());
+  EXPECT_EQ(0, v->Patch());
+  EXPECT_TRUE(v->Prerelease().empty());
+  EXPECT_TRUE(v->BuildMetadata().empty());
+
+  v = Version::Parse("0.1.42-beta.2+12345.dirty");
+  EXPECT_TRUE(v.has_value());
+  EXPECT_EQ(0, v->Major());
+  EXPECT_EQ(1, v->Minor());
+  EXPECT_EQ(42, v->Patch());
+  EXPECT_EQ("beta.2", v->Prerelease());
+  EXPECT_EQ("12345.dirty", v->BuildMetadata());
+
+  v = Version::Parse("Not a version");
+  EXPECT_FALSE(v.has_value());
+
+  v = Version::Parse("1234.5678.9+12345abcdef");
+  EXPECT_TRUE(v.has_value());
+  EXPECT_EQ(1234, v->Major());
+  EXPECT_EQ(5678, v->Minor());
+  EXPECT_EQ(9, v->Patch());
+  EXPECT_TRUE(v->Prerelease().empty());
+  EXPECT_EQ("12345abcdef", v->BuildMetadata());
+}
+
 TEST(VersionTest, ToString) {
   Version v{1, 0, 0, "rc.2", "12345"};
   std::stringstream ss;
