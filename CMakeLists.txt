@@ -6,14 +6,38 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
 include(GetGitRevisionDescription)
 
-set(ORION_VERSION_MAJOR 0)
-set(ORION_VERSION_MINOR 1)
-set(ORION_VERSION_PATCH 0)
-set(ORION_VERSION_PRERELEASE)
+git_describe(GIT_DESC --abbrev=0)
+if ("${GIT_DESC}" MATCHES "^([0-9]+)\\.([0-9]+)$")
+    # Major.Minor
+    set(ORION_VERSION_MAJOR ${CMAKE_MATCH_1})
+    set(ORION_VERSION_MINOR ${CMAKE_MATCH_2})
+    set(ORION_VERSION_PATCH 0)
+    set(ORION_VERSION_PRERELEASE "")
+elseif ("${GIT_DESC}" MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
+    # Major.Minor.Patch
+    set(ORION_VERSION_MAJOR ${CMAKE_MATCH_1})
+    set(ORION_VERSION_MINOR ${CMAKE_MATCH_2})
+    set(ORION_VERSION_PATCH ${CMAKE_MATCH_3})
+    set(ORION_VERSION_PRERELEASE "")
+elseif ("${GIT_DESC}" MATCHES "^([0-9]+)\\.([0-9]+)\\-([0-9A-Za-z\\-\\.]+)$")
+    # Major.Minor-Prerelease
+    set(ORION_VERSION_MAJOR ${CMAKE_MATCH_1})
+    set(ORION_VERSION_MINOR ${CMAKE_MATCH_2})
+    set(ORION_VERSION_PATCH 0)
+    set(ORION_VERSION_PRERELEASE ${CMAKE_MATCH_3})
+elseif ("${GIT_DESC}" MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)\\-([0-9A-Za-z\\-\\.]+)$")
+    # Major.Minor.Patch-Prerelease
+    set(ORION_VERSION_MAJOR ${CMAKE_MATCH_1})
+    set(ORION_VERSION_MINOR ${CMAKE_MATCH_2})
+    set(ORION_VERSION_PATCH ${CMAKE_MATCH_3})
+    set(ORION_VERSION_PRERELEASE ${CMAKE_MATCH_4})
+else ()
+    message(WARNING "Unable to parse latest git tag for version information")
+endif ()
 
-git_describe(GIT_COMMIT_HASH)
-
-list(APPEND ORION_VERSION_BUILDINFO ${GIT_COMMIT_HASH})
+get_git_head_revision(GIT_REFSPEC GIT_HASH)
+string(SUBSTRING "${GIT_HASH}" 0 7 GIT_HASH)
+list(APPEND ORION_VERSION_BUILDINFO ${GIT_HASH})
 
 git_local_changes(GIT_LOCAL_CHANGES)
 if (GIT_LOCAL_CHANGES STREQUAL "DIRTY")
