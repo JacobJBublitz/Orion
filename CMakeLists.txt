@@ -28,15 +28,12 @@ else ()
 endif ()
 
 get_git_head_revision(GIT_REFSPEC GIT_HASH)
-string(SUBSTRING "${GIT_HASH}" 0 7 GIT_HASH)
-list(APPEND ORION_VERSION_BUILDINFO ${GIT_HASH})
+string(SUBSTRING "${GIT_HASH}" 0 7 ORION_VERSION_BUILDINFO)
 
 git_local_changes(GIT_LOCAL_CHANGES)
 if (GIT_LOCAL_CHANGES STREQUAL "DIRTY")
-    list(APPEND ORION_VERSION_BUILDINFO dirty)
+    string(APPEND ORION_VERSION_BUILDINFO ".dirty")
 endif ()
-
-list(JOIN ORION_VERSION_BUILDINFO "." ORION_VERSION_BUILDINFO)
 
 add_library(OrionEngine_Core STATIC)
 add_library(OrionEngine::Core ALIAS OrionEngine_Core)

@@ -2,6 +2,7 @@
 
 #include "Orion/Stl/String.hh"
 
+#include <cstring>
 #include <sstream>
 
 namespace Orion {

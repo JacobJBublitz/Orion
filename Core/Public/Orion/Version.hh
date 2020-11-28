@@ -37,7 +37,7 @@ public:
    * @return The pre-release component or an empty string if the component does
    * not exist.
    */
-  [[nodiscard]] constexpr std::string_view Prerelease() const noexcept {
+  [[nodiscard]] inline std::string_view Prerelease() const noexcept {
     return {string_storage_.data(), build_metadata_offset_};
   }
   [[nodiscard]] std::string_view Prerelease(std::size_t idx) const noexcept;
@@ -47,7 +47,7 @@ public:
    * If no build metadata exists an empty string is returned.
    * @return The build metadata or an empty string if no build metadata exists.
    */
-  [[nodiscard]] constexpr std::string_view BuildMetadata() const noexcept {
+  [[nodiscard]] inline std::string_view BuildMetadata() const noexcept {
     return {string_storage_.data() + build_metadata_offset_,
             string_storage_.size() - build_metadata_offset_};
   }
