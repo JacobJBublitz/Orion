@@ -1,14 +1,26 @@
 configure_file(Private/BuildInfo.cc.in Private/BuildInfo.cc @ONLY)
 
+list(APPEND PRIVATE_SOURCES
+        "${CMAKE_CURRENT_BINARY_DIR}/Private/BuildInfo.cc"
+        Private/Version.cc
+        Private/Stl/String.cc
+        )
+
+if (WIN32)
+    list(APPEND PRIVATE_SOURCES
+            Private/Win32/Platform.cc
+            )
+endif ()
+
 target_sources(
         OrionEngine_Core
         PUBLIC
         Public/Orion/BuildInfo.hh
+        Public/Orion/Platform.hh
         Public/Orion/Version.hh
         Public/Orion/Stl/String.hh
         PRIVATE
-        "${CMAKE_CURRENT_BINARY_DIR}/Private/BuildInfo.cc"
-        Private/Version.cc
+        ${PRIVATE_SOURCES}
 )
 target_include_directories(
         OrionEngine_Core
@@ -20,7 +32,7 @@ target_include_directories(
 target_compile_features(
         OrionEngine_Core
         PUBLIC
-        cxx_std_17
+        cxx_std_20
 )
 set_target_properties(
         OrionEngine_Core PROPERTIES
