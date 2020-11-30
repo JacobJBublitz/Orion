@@ -10,6 +10,10 @@ if (WIN32)
     list(APPEND PRIVATE_SOURCES
             Private/Win32/Platform.cc
             )
+else ()
+    list(APPEND PRIVATE_SOURCES
+            Private/Posix/Platform.cc
+            )
 endif ()
 
 target_sources(

@@ -1,6 +1,7 @@
 #include "Orion/Stl/String.hh"
 
 #include <array>
+#include <cstring>
 #include <optional>
 #include <sstream>
 
@@ -41,7 +42,7 @@ std::size_t EncodeUtf8CodeUnits(CodePoint code_point,
   } else
     // Invalid code point
     // TODO: Better encoding exception
-    throw std::exception("Invalid code point");
+    throw std::runtime_error("Invalid code point");
 }
 
 std::size_t EncodeUtf16CodeUnits(CodePoint code_point,
@@ -57,7 +58,7 @@ std::size_t EncodeUtf16CodeUnits(CodePoint code_point,
   } else
     // Invalid code point
     // TODO: Better encoding exception
-    throw std::exception("Invalid code point");
+    throw std::runtime_error("Invalid code point");
 }
 
 struct DecodeUtf8State {
@@ -88,7 +89,7 @@ std::optional<CodePoint> DecodeUtf8CodeUnit(std::uint8_t code_unit,
     } else
       // Invalid code unit
       // TODO: Better exceptions
-      throw std::exception("Invalid code unit");
+      throw std::runtime_error("Invalid code unit");
 
     return {};
   }
@@ -96,7 +97,7 @@ std::optional<CodePoint> DecodeUtf8CodeUnit(std::uint8_t code_unit,
   if ((code_unit & 0b11000000u) != 0b10000000u)
     // Invalid code unit
     // TODO: Better exceptions
-    throw std::exception("Invalid code unit");
+    throw std::runtime_error("Invalid code unit");
 
   state.CurrentCodePoint =
       (state.CurrentCodePoint << 6u) | (code_unit & 0b00111111u);
@@ -128,7 +129,7 @@ std::optional<CodePoint> DecodeUtf8CodeUnit(std::uint8_t code_unit,
       // code unit == code point
       if (code_point != 0)
         // TODO: Better encoding error (error character??)
-        throw std::exception("Bad surrogate pair");
+        throw std::runtime_error("Bad surrogate pair");
       else if (utf16_code_unit == 0)
         // Null char, stop decoding
         break;
@@ -137,7 +138,7 @@ std::optional<CodePoint> DecodeUtf8CodeUnit(std::uint8_t code_unit,
       // First-half of surrogate pair
       if (code_point != 0)
         // TODO: Better encoding error (error character??)
-        throw std::exception("Bad surrogate pair");
+        throw std::runtime_error("Bad surrogate pair");
       code_point = utf16_code_unit - 0xd800;
       code_point <<= 10u;
       continue;
@@ -146,7 +147,7 @@ std::optional<CodePoint> DecodeUtf8CodeUnit(std::uint8_t code_unit,
       code_point += utf16_code_unit - 0xdc00;
     } else {
       // Invalid code unit
-      throw std::exception("Invalid code unit");
+      throw std::runtime_error("Invalid code unit");
     }
 
     std::size_t num_units = EncodeUtf8CodeUnits(code_point, utf8_code_units);
@@ -158,16 +159,35 @@ std::optional<CodePoint> DecodeUtf8CodeUnit(std::uint8_t code_unit,
                    // our own string implementation.
 }
 
+[[nodiscard]] String DecodeUtf32(std::span<const std::byte> bytes) {
+  std::basic_stringstream<char8_t> ss;
+
+  std::span<const char32_t> utf16_code_units{
+      reinterpret_cast<const char32_t *>(bytes.data()), bytes.size_bytes() / 4};
+  std::array<char8_t, 4> utf8_code_units{u8'\0'};
+  for (CodePoint code_point : utf16_code_units) {
+    std::size_t num_units = EncodeUtf8CodeUnits(code_point, utf8_code_units);
+    ss.write(utf8_code_units.data(), num_units);
+  }
+
+  return ss.str(); // There's an extra copy made here but to fix it we need have
+  // our own string implementation.
+}
+
 std::size_t EncodeUtf8(StringView str, std::span<char8_t> buffer,
                        bool zero_terminated) {
-  std::memcpy(buffer.data(), str.data(), std::min(buffer.size(), str.size()));
+  std::size_t str_size = str.size();
+  if (str.ends_with(u8'\0'))
+    str_size--;
+
+  std::memcpy(buffer.data(), str.data(), std::min(buffer.size(), str_size));
 
   if (zero_terminated) {
-    if (str.size() < buffer.size())
+    if (str_size < buffer.size())
       buffer[str.size()] = u8'\0';
-    return str.size() + 1;
+    str_size++;
   }
-  return str.size();
+  return str_size;
 }
 
 std::size_t EncodeUtf16(StringView str, std::span<char16_t> buffer,
@@ -177,6 +197,9 @@ std::size_t EncodeUtf16(StringView str, std::span<char16_t> buffer,
   DecodeUtf8State decode_state;
   std::array<char16_t, 2> utf16_code_units{u'\0', u'\0'};
   for (char8_t utf8_code_unit : str) {
+    if (utf8_code_unit == u8'\0')
+      break;
+
     auto code_point_opt = DecodeUtf8CodeUnit(
         static_cast<std::uint8_t>(utf8_code_unit), decode_state);
     if (!code_point_opt)
@@ -195,8 +218,39 @@ std::size_t EncodeUtf16(StringView str, std::span<char16_t> buffer,
   }
 
   if (zero_terminated) {
-    if (total_length + 1 < buffer.size()) {
+    if (total_length < buffer.size()) {
       buffer[total_length] = u'\0';
+    }
+
+    total_length++;
+  }
+
+  return total_length;
+}
+
+std::size_t EncodeUtf32(StringView str, std::span<char32_t> buffer,
+                        bool zero_terminated) {
+  std::size_t total_length = 0;
+
+  DecodeUtf8State decode_state;
+  for (char8_t utf8_code_unit : str) {
+    if (utf8_code_unit == u8'\0')
+      break;
+
+    auto code_point_opt = DecodeUtf8CodeUnit(
+        static_cast<std::uint8_t>(utf8_code_unit), decode_state);
+    if (!code_point_opt)
+      continue;
+
+    if (total_length < buffer.size()) {
+      buffer[total_length] = *code_point_opt;
+    }
+    total_length++;
+  }
+
+  if (zero_terminated) {
+    if (total_length < buffer.size()) {
+      buffer[total_length] = U'\0';
     }
 
     total_length++;

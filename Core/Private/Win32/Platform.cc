@@ -12,7 +12,7 @@ namespace {
 
 constexpr std::size_t kEnvBufferSize = 64;
 
-}
+} // namespace
 
 std::optional<Stl::String> EnvironmentVariable(Stl::StringView variable) {
   wchar_t name_stack_buffer[kEnvBufferSize];
